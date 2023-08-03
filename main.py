@@ -8,7 +8,9 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import pandas as pd
 from model import load_model, make_predictions
-
+#Comienzo de la api
+#para levantar fast api: uvicorn main:app --reload
+app = FastAPI()
 
 #lectura del json y creación data frame
 rows = []
@@ -46,9 +48,7 @@ df.fillna(value=replacement_values, inplace=True)
 
 
 
-#Comienzo de la api
-#para levantar fast api: uvicorn main:app --reload
-app = FastAPI()
+
 
 
 
