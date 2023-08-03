@@ -4,6 +4,10 @@ import pandas as pd
 import numpy as np
 from fastapi import FastAPI
 from datetime import datetime
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+import pandas as pd
+from model import load_model, make_predictions
 
 
 #lectura del json y creación data frame
@@ -95,35 +99,50 @@ def metascore(año: int):
     top_metascore_games = filtered_df.nlargest(5, 'metascore')[['app_name', 'metascore']].set_index('app_name').to_dict()['metascore']
     return top_metascore_games
 
+# Define the request body model using Pydantic
+class FeatureData(BaseModel):
+    # Define the feature columns and their data types
+   metascore:float
+   genres_:bool
+   genres_Accounting: bool
+   genres_Action: bool
+   genres_Adventure: bool
+   genres_Animation: bool
+   genres_Audio_Production: bool
+   genres_Casual: bool
+   genres_Design: bool
+   genres_Early_Access: bool
+   genres_Education: bool
+   genres_Free_to_Play: bool
+   genres_Indie: bool
+   genres_Massively_Multiplayer: bool
+   genres_Photo_Editing: bool
+   genres_RPG: bool
+   genres_Racing: bool
+   genres_Simulation:bool
+   genres_Software_Training: bool
+   genres_Sports: bool
+   genres_Strategy: bool
+   genres_Utilities: bool
+   genres_Video: bool
+   genres_Web_Publishing:bool
 
-#Entranamiento del modelo
+# Load the trained model
+model = load_model('linear_regression_model.pkl')
 
-from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
-from sklearn.model_selection import train_test_split
-from sklearn.ensemble import RandomForestRegressor
+# Create a POST route for making predictions
+@app.post("/predict/")
+async def predict_price(data: FeatureData):
+    try:
+        # Convert the input data to a DataFrame
+        input_data = pd.DataFrame([data.dict()])
 
-X = df[['genres', 'early_access', 'metascore', 'sentiment', 'specs', 'app_name']]  #features
-y = df['price']  #Target
+        # Use the trained model to make predictions
+        predictions = make_predictions(model, input_data)
 
-#dividimos la data en entretanimiento y test
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-
-#modelo de regresión 
-model_reg = RandomForestRegressor(random_state=42)
-
-#entrenamiento del modelo
-model_reg.fit(X_train, y_train)
-
-#predicciones en el testeo
-y_pred = model_reg.predict(X_test)
-
-#metricas
-mse = mean_squared_error(y_test, y_pred)
-rmse = np.sqrt(mse)
-mae = mean_absolute_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
-
-print("Mean Squared Error:", mse)
-print("Root Mean Squared Error:", rmse)
-print("Mean Absolute Error:", mae)
-print("R-squared:", r2)
+        # Return the predictions
+        return {"predictions": predictions[0]}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
