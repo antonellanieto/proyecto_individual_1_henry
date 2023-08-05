@@ -8,6 +8,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import pandas as pd
 from model import load_model, make_predictions
+
+
 #Comienzo de la api
 #para levantar fast api: uvicorn main:app --reload
 app = FastAPI()
@@ -99,33 +101,34 @@ def metascore(año: int):
     top_metascore_games = filtered_df.nlargest(5, 'metascore')[['app_name', 'metascore']].set_index('app_name').to_dict()['metascore']
     return top_metascore_games
 
+
+
+
 # Define the request body model using Pydantic
 class FeatureData(BaseModel):
-    # Define the feature columns and their data types
-   metascore:float
-   genres_:bool
-   genres_Accounting: bool
-   genres_Action: bool
-   genres_Adventure: bool
-   genres_Animation: bool
-   genres_Audio_Production: bool
-   genres_Casual: bool
-   genres_Design: bool
-   genres_Early_Access: bool
-   genres_Education: bool
-   genres_Free_to_Play: bool
-   genres_Indie: bool
-   genres_Massively_Multiplayer: bool
-   genres_Photo_Editing: bool
-   genres_RPG: bool
-   genres_Racing: bool
-   genres_Simulation:bool
-   genres_Software_Training: bool
-   genres_Sports: bool
-   genres_Strategy: bool
-   genres_Utilities: bool
-   genres_Video: bool
-   genres_Web_Publishing:bool
+   early_acces: bool
+   Accounting: bool
+   Action: bool
+   Adventure: bool
+   Animation: bool
+   Audio_Production: bool
+   Casual: bool
+   Design: bool
+   Early_Access: bool
+   Education: bool
+   Free_to_Play: bool
+   Indie: bool
+   Massively_Multiplayer: bool
+   Photo_Editing: bool
+   RPG: bool
+   Racing: bool
+   Simulation:bool
+   Software_Training: bool
+   Sports: bool
+   Strategy: bool
+   Utilities: bool
+   Video: bool
+   Web_Publishing:bool
 
 # Load the trained model
 model = load_model('linear_regression_model.pkl')
