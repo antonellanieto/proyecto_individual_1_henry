@@ -10,6 +10,7 @@ import pandas as pd
 from pydantic import BaseModel
 from enum import Enum
 import numpy as np
+import pickle
 
 #Comienzo de la api
 #para levantar fast api: uvicorn main:app --reload
@@ -104,7 +105,8 @@ def metascore(Año: int):
 
 
 # Load the trained model
-loaded_model = joblib.load('gradient_boosting.pkl', protocol=4)
+with open('gradient_boosting.pkl', 'rb') as f:
+    loaded_model = pickle.load(f)
 
 #Prediccion de precios, basado en el modelo entrenado y guardado
 
