@@ -16,7 +16,7 @@ import numpy as np
 app = FastAPI()
 
 file = 'df_reduced4.pkl'
-df = pd.read_pickle(file)
+df = pd.read_pickle(file, protocol=4)
 
 
 @app.get("/")

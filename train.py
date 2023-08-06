@@ -58,7 +58,7 @@ df_reduced = df_reduced.groupby(level=0).first()
 
 
 
-df_reduced.to_pickle('df_reduced4.pkl')
+
 
 #Comienzo de el modelo
 
