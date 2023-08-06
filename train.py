@@ -5,26 +5,10 @@ import numpy as np
 from datetime import datetime
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-import joblib
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import GridSearchCV
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.metrics import mean_squared_error
-from sklearn.model_selection import cross_val_score
-from sklearn.preprocessing import MultiLabelBinarizer
-from sklearn.linear_model import Ridge
-from sklearn.svm import SVR
 from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.svm import SVR
-from sklearn.preprocessing import StandardScaler
-from sklearn.pipeline import Pipeline
-from sklearn.impute import SimpleImputer
-from sklearn.ensemble import HistGradientBoostingRegressor
-from sklearn.neighbors import KNeighborsRegressor
+
 
 
 #lectura del json y creación data frame
