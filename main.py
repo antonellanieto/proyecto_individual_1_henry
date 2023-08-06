@@ -103,7 +103,8 @@ def metascore(Año: int):
 
 
 
-
+# Load the trained model
+loaded_model = joblib.load('gradient_boosting.pkl', protocol=4)
 
 #Prediccion de precios, basado en el modelo entrenado y guardado
 
@@ -115,8 +116,7 @@ class GameFeatures(BaseModel):
 
 
 
-# Load the trained model
-loaded_model = joblib.load('gradient_boosting.pkl', protocol=4)
+
 
 
 class Genre(Enum):
