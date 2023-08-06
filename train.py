@@ -27,7 +27,6 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.neighbors import KNeighborsRegressor
 
 
-
 #lectura del json y creación data frame
 rows = []
 with open('steam_games.json') as f: 
@@ -57,7 +56,7 @@ df.dropna(subset=['genres'], inplace=True)
 
 
 columns_to_drop = ['publisher', 'url', 'tags', 'discount_price',
-                   'reviews_url', 'specs',  'id', 'developer', 'sentiment','app_name', 'title']
+                   'reviews_url', 'id', 'developer', 'title']
 #elimino columnas pra el modelo
 df_reduced = df.drop(columns_to_drop, axis=1)
 
@@ -68,29 +67,20 @@ df_reduced['genres'] = df_reduced['genres'].str.split(',')
 df_reduced = df_reduced.explode('genres')
 df_reduced['genres'] = df_reduced['genres'].str.extract(r"(\w+)")
 
-# flattened_genres = [genre for genres_list in df_reduced['genres'] for genre in genres_list]
-# genres_df = pd.DataFrame({'genres': flattened_genres})
 
 label_encoder = LabelEncoder()
 df_reduced['genres_encoded'] = label_encoder.fit_transform(df_reduced['genres'])
 df_reduced = df_reduced.groupby(level=0).first()
 
-# genres_df['genres_encoded'] = label_encoder.fit_transform(genres_df['genres'])
-
-# df_reduced['genres_encoded'] = genres_df.groupby(level=0)['genres_encoded'].apply(list)
-
-# df_reduced['encoded_genre'] = df_reduced['genres_encoded'].apply(lambda x: x[0])
-
-df_reduced.drop('genres', axis=1, inplace=True)
 
 
-
+df_reduced.to_pickle('df_reduced4.pkl')
 
 #Comienzo de el modelo
 
-# Separate the target variable (price) from the features (X)
-X = df_reduced.drop(['price'], axis=1)
 
+# Separate the target variable (price) from the features (X)
+X = df_reduced.drop(['price', 'sentiment', 'genres', 'app_name', 'specs'], axis=1)
 y = df_reduced['price']
 
 # Assuming X and y are defined as before
@@ -110,5 +100,6 @@ rmse = mse ** 0.5
 # Calculate the R2 score
 r2 = r2_score(y_test, y_pred)
 
-print("Root Mean Squared Error (RMSE):", rmse)
-print("R-squared (R2) Score:", r2)
+# print("Root Mean Squared Error (RMSE):", rmse)
+# print("R-squared (R2) Score:", r2)
+

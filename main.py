@@ -1,151 +1,188 @@
-import json
-import ast 
 import pandas as pd
 import numpy as np
 from fastapi import FastAPI
-from datetime import datetime
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import pandas as pd
-from model import load_model, make_predictions
-
+import joblib
+from fastapi import FastAPI, HTTPException
+import pandas as pd
+from pydantic import BaseModel
+from enum import Enum
+import numpy as np
 
 #Comienzo de la api
 #para levantar fast api: uvicorn main:app --reload
 app = FastAPI()
 
-#lectura del json y creación data frame
-rows = []
-with open('steam_games.json') as f: 
-    for line in f.readlines():
-        rows.append(ast.literal_eval(line))
-
-df = pd.DataFrame(rows)
+file = 'df_reduced4.pkl'
+df = pd.read_pickle(file)
 
 
-#Limpieza de data
-df['release_date'] = pd.to_datetime(df['release_date'], errors='coerce')
-specific_date = pd.to_datetime('1900-01-01')
-df['release_date'] = df['release_date'].fillna(specific_date)
-df['metascore'] = pd.to_numeric(df['metascore'], errors='coerce')
-df['price'] = pd.to_numeric(df['price'], errors='coerce')
-
-replacement_values = {
-    'publisher': '',
-    'genres': '',
-    'tags': '',
-    'discount_price': 0,     
-    'price': 0,
-    'specs': '',
-    'reviews_url': '',            
-    'metascore': 0,         
-    'app_name': '',        
-    'title': '', 
-    'id': '',
-    'sentiment': '',
-    'developer': ''            
-
-}
-df.fillna(value=replacement_values, inplace=True)
+@app.get("/")
+async def root():
+    return 'Hello, World'
 
 
-
-
-
-
-
-# Retorna los 5 géneros más vendidos en el año indicado
+# Función para obtener los 5 géneros más vendidos en un año
 @app.get('/genero/')
-def genero(año: int):
-    filtered_df = df[df['release_date'].dt.year == año]
-    # desanidar
-    exploded_genres_df = filtered_df.explode('genres')
-    top_genres = exploded_genres_df['genres'].value_counts().nlargest(5).index.tolist()
-    return top_genres
+def genero(Año: int):
+    año_str = str(Año)
+
+#     # Filtrar el DataFrame para el año especificado
+    df_year = df[df['year'].astype(str).str.startswith(año_str)]
+    
+    # Obtener los géneros más vendidos en el año especificado
+    top_generos = df_year['genres'].explode().value_counts().head(5).index.tolist()
+    return top_generos
 
 
-# Retorna juegos lanzados en el año indicado
+# Función para obtener los juegos lanzados en un año
 @app.get('/juegos/')
-def juegos(año: int):
-    filtered_df = df[df['release_date'].dt.year == año]
-    released_games = filtered_df['app_name'].tolist()
-    return released_games
+def juegos(Año: int):
+    año_str = str(Año)
 
-# Retorna 5 specs más repetidos en el año indicado
+    # Filtrar el DataFrame para el año especificado
+    df_year = df[df['year'].astype(str).str.startswith(año_str)]
+    
+    # Obtener los juegos lanzados en el año especificado
+    juegos_lanzados = df_year['app_name'].tolist()
+    return juegos_lanzados
+
+
+
+# Función para obtener los 5 specs más repetidos en un año
 @app.get('/specs/')
-def specs(año: int):
-    filtered_df = df[df['release_date'].dt.year == año]
-    exploded_specs_df = filtered_df.explode('specs')
-    top_specs = exploded_specs_df['specs'].value_counts().nlargest(5).index.tolist()
+def specs(Año: int):
+
+    año_str = str(Año)
+    # Filtrar el DataFrame para el año especificado
+    df_year = df[df['year'].astype(str).str.startswith(año_str)]
+    
+    # Obtener los specs más repetidos en el año especificado
+    top_specs = df_year['specs'].explode().value_counts().head(5).index.tolist()
     return top_specs
 
 
-# Retorna cantidad de juegos lanzados con early acces en el año indicado
+
+# Función para obtener la cantidad de juegos lanzados en un año con early access
 @app.get('/earlyacces/')
-def earlyacces(año: int):
-    filtered_df = df[df['release_date'].dt.year == año]
-    count_early_access = len(filtered_df[filtered_df['early_access'] == True])
-    return count_early_access
+def earlyacces(Año: str):
+    año_str = str(Año)
+    # Filtrar el DataFrame para el año especificado
+    mask = (df['year'].astype(str).str.startswith(año_str)) & (df["early_access"] == True)
+    df_year = df[mask]
+    df_year = df[mask]
 
-# Retorna lista con registros categorizados con un "sentiment" específico, en el año indicado
+    games = len(df_year)
+    return {"games": games}
+
+
 @app.get('/sentiment/')
-def sentiment(año: int):
-    filtered_df = df[df['release_date'].dt.year == año]
-    sentiment_counts = filtered_df['sentiment'].value_counts().to_dict()
-    return sentiment_counts
+def sentiment(Año: int):
+    año_str = str(Año)
 
-# Retorna los 5 juegos con mayor metascore en el año indicado
+    # Filtrar el DataFrame para el año especificado
+    df_year = df[df['year'].astype(str).str.startswith(año_str)]
+    
+    # Obtener el análisis de sentimiento y contar la cantidad de registros en cada categoría
+    analisis_sentimiento = df_year['sentiment'].value_counts().to_dict()
+    
+    return analisis_sentimiento
+
 @app.get('/metascore/')
-def metascore(año: int):
-    filtered_df = df[df['release_date'].dt.year == año]
-    top_metascore_games = filtered_df.nlargest(5, 'metascore')[['app_name', 'metascore']].set_index('app_name').to_dict()['metascore']
-    return top_metascore_games
+def metascore(Año: int):
+
+    año_str = str(Año)
+
+    # Filtrar el DataFrame para el año especificado
+    df_year = df[df['year'].astype(str).str.startswith(año_str)]
+    
+    # Obtener los top 5 juegos con mayor metascore en el año especificado
+    top_metascore_juegos = df_year.nlargest(5, 'metascore')['app_name'].tolist()
+    return top_metascore_juegos
 
 
 
 
-# Define the request body model using Pydantic
-class FeatureData(BaseModel):
-   early_acces: bool
-   Accounting: bool
-   Action: bool
-   Adventure: bool
-   Animation: bool
-   Audio_Production: bool
-   Casual: bool
-   Design: bool
-   Early_Access: bool
-   Education: bool
-   Free_to_Play: bool
-   Indie: bool
-   Massively_Multiplayer: bool
-   Photo_Editing: bool
-   RPG: bool
-   Racing: bool
-   Simulation:bool
-   Software_Training: bool
-   Sports: bool
-   Strategy: bool
-   Utilities: bool
-   Video: bool
-   Web_Publishing:bool
+
+
+
+
+
+class GameFeatures(BaseModel):
+    metascore: float
+    early_acces: bool
+    year: int
+
+
 
 # Load the trained model
-model = load_model('linear_regression_model.pkl')
+modelo_file = 'gradient_boosting.pkl'
+loaded_model = joblib.load(modelo_file)
 
-# Create a POST route for making predictions
-@app.post("/predict/")
-async def predict_price(data: FeatureData):
+
+class Genre(Enum):
+    Action = "Action"
+    Adventure = "Adventure"
+    Casual = "Casual"
+    Early_Access = "Early Access"
+    Free_to_Play = "Free to Play"
+    Indie = "Indie"
+    Massively_Multiplayer = "Massively Multiplayer"
+    RPG = "RPG"
+    Racing = "Racing"
+    Simulation = "Simulation"
+    Sports = "Sports"
+    Strategy = "Strategy"
+    Video_Production = "Video Production"
+
+
+
+@app.get("/predict")
+def predict(metascore: float = None, year: int = None, genre: Genre = None):
+     # Validate that all required parameters are provided
+    if metascore is None or year is None or genre is None:
+        raise HTTPException(status_code=400, detail="Missing parameters")
+
+    # Convert the input to a DataFrame with the columns required for the model
+    input_df = pd.DataFrame(
+        [[metascore, year, genre == Genre.Early_Access, genre.value == Genre.Free_to_Play]],
+        columns=['early_access', 'metascore', 'year', 'genres_encoded']
+    )
+
+    # Perform the prediction with the model
     try:
-        # Convert the input data to a DataFrame
-        input_data = pd.DataFrame([data.dict()])
-
-        # Use the trained model to make predictions
-        predictions = make_predictions(model, input_data)
-
-        # Return the predictions
-        return {"predictions": predictions[0]}
-    
+      price = loaded_model.predict(input_df)[0]
+    except ValueError as e:
+         raise HTTPException(status_code=400, detail="Invalid input: " + str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+    # Return the price and RMSE as output
+    return {"price": price, "RMSE del modelo": 8.827512792544086}
+
+
+
+
+
+
+
+
+
+
+
+
+
+# # Create a POST route for making predictions
+# @app.get("/predict/")
+# async def predict(features: List[GameFeatures]):
+#     predictions = []
+#     for feature in features:
+#         X = np.array([[feature.metascore, feature.early_acces, feature.year]])
+
+#         prediction = loaded_model.predict(X)
+
+#         predictions.append(Generos(prediction[0]).name)
     
+#     return predictions
