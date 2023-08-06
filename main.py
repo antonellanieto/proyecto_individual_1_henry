@@ -166,7 +166,20 @@ def predict(metascore: float = None, year: int = None, genre: Genre = None):
 
 
 
+# Custom root endpoint to display all available endpoints
+@app.get('/')
+def get_endpoints():
+    # Generate the OpenAPI schema
+    openapi_schema = app.openapi()
 
+    # Extract the paths (endpoints) from the schema
+    paths = openapi_schema['paths']
+
+    # Get a list of all available endpoints
+    endpoints = [path for path in paths]
+
+    # Return the list of endpoints
+    return {'endpoints': endpoints}
 
 
 
