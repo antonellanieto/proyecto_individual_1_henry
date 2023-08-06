@@ -15,9 +15,7 @@ import numpy as np
 #para levantar fast api: uvicorn main:app --reload
 app = FastAPI()
 
-file = 'df_reduced4.pkl'
-df = pd.read_pickle(file, protocol=4)
-
+df = pd.read_csv('df_reduced.csv')
 
 @app.get("/")
 async def root():
@@ -107,7 +105,7 @@ def metascore(Año: int):
 
 
 
-
+#Prediccion de precios, basado en el modelo entrenado y guardado
 
 
 class GameFeatures(BaseModel):
@@ -171,18 +169,3 @@ def predict(metascore: float = None, year: int = None, genre: Genre = None):
 
 
 
-
-
-
-# # Create a POST route for making predictions
-# @app.get("/predict/")
-# async def predict(features: List[GameFeatures]):
-#     predictions = []
-#     for feature in features:
-#         X = np.array([[feature.metascore, feature.early_acces, feature.year]])
-
-#         prediction = loaded_model.predict(X)
-
-#         predictions.append(Generos(prediction[0]).name)
-    
-#     return predictions
