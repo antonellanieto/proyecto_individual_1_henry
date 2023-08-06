@@ -116,8 +116,7 @@ class GameFeatures(BaseModel):
 
 
 # Load the trained model
-modelo_file = 'gradient_boosting.pkl'
-loaded_model = joblib.load(modelo_file)
+loaded_model = joblib.load('gradient_boosting.pkl', protocol=4)
 
 
 class Genre(Enum):
