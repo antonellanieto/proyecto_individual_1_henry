@@ -18,9 +18,9 @@ app = FastAPI()
 
 df = pd.read_csv('df_reduced.csv')
 
-@app.get("/")
-async def root():
-    return 'Hello, World'
+# @app.get("/")
+# async def root():
+#     return 'Hello, World'
 
 
 # Función para obtener los 5 géneros más vendidos en un año
