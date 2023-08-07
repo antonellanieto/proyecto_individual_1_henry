@@ -48,7 +48,8 @@ button{
   font-size: 15px;
   border: none;
   cursor: pointer;
-  border-radius: 5px;
+  border-radius: 5px; 
+
 }
 
 label{
@@ -68,4 +69,9 @@ input {
 
 #predict{
   border: #ccc;
+}
+
+
+.buscar{
+  margin-top: 10px;
 }

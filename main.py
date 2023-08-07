@@ -1,7 +1,8 @@
 
 import numpy as np
 from fastapi import FastAPI
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Form, Request
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import pandas as pd
 from pydantic import BaseModel
@@ -10,22 +11,23 @@ import pickle
 from fastapi.responses import HTMLResponse
 from train import model 
 from fastapi.staticfiles import StaticFiles
+import joblib
 
 
+app = FastAPI(debug=True)
 
-app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
-df = pd.read_csv('df_reduced.csv')
 
+templates = Jinja2Templates(directory="templates")
+
+df = pd.read_csv('df_reduced.csv')
+df = df.dropna()
 
 
 #Función para conectar el index, página principal
-@app.get("/", response_class=HTMLResponse)
-async def read_root():
-    with open("templates/index.html", "r", encoding="utf-8") as file:
-        content = file.read()
-    return HTMLResponse(content=content)
-
+@app.get("/")
+def index(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 # Función para obtener los 5 géneros más vendidos en un año
 @app.get('/genero/')
@@ -137,66 +139,152 @@ def metascore(Year: int):
 
 
 #Carga de modelo
-with open('gradient_boosting.pkl', 'wb') as f:
+with open('trained_model.pkl', 'wb') as f:
     pickle.dump(model, f)
 
-with open('gradient_boosting.pkl', 'rb') as f:
+with open('trained_model.pkl', 'rb') as f:
     loaded_model = pickle.load(f)
 
 
 
-#Prediccion de precios, basado en el modelo entrenado y guardado
-
-class GameFeatures(BaseModel):
-    metascore: float
-    early_acces: bool
-    year: int
 
 
-
-class Genre(Enum):
-    Action = "Action"
-    Adventure = "Adventure"
-    Casual = "Casual"
-    Early_Access = "Early Access"
-    Free_to_Play = "Free to Play"
-    Indie = "Indie"
-    Massively_Multiplayer = "Massively Multiplayer"
-    RPG = "RPG"
-    Racing = "Racing"
-    Simulation = "Simulation"
-    Sports = "Sports"
-    Strategy = "Strategy"
-    Video_Production = "Video Production"
+label_encoder = joblib.load('label_encoder.pkl')
 
 
+@app.get('/predict/')
+def predict(genre, early_access, metascore, year):
 
-@app.get("/predict")
-def predict(metascore: float = None, year: int = None, genre: Genre = None):
-    #Validar que los parámetros están ok
-    if metascore is None or year is None or genre is None:
-        raise HTTPException(status_code=400, detail="Missing parameters")
+    early_access = early_access.lower() == "true"
+
     
-    #Convertir el input a un DataFrame con las columnas requeridas para el modelo
-    input_df = pd.DataFrame(
-        [[metascore, year, genre == Genre.Early_Access, genre.value == Genre.Free_to_Play]],
-        columns=['early_access', 'metascore', 'year', 'genres_encoded']
-    )
+    # Verificar que el género ingresado esté presente en el LabelEncoder
+    if genre not in label_encoder.classes_:
+        genres_list = ", ".join(label_encoder.classes_)
+        print(f"Error: El género '{genre}' no está presente en el dataset.")
+        print(f"Los géneros disponibles son: {genres_list}")
+        return None, None
+    
+    # Obtener el valor codificado del género usando el LabelEncoder
+    genre_encoded = label_encoder.transform([genre])[0]
+    
+    # Verificar que el metascore ingresado esté presente en el dataset
+    if float(metascore) not in df["metascore"].unique():
+        metascores_list = ", ".join(map(str, df["metascore"].unique()))
+        print(f"Error: El metascore '{metascore}' no está presente en el dataset.")
+        print(f"Los metascores disponibles son: {metascores_list}")
+        return None, None
+    
+    # Verificar que el año ingresado esté presente en el dataset
+    if int(year) not in df["year"].unique():
+        min_year = df["year"].min()
+        max_year = df["year"].max()
+        print(f"Error: El año '{year}' no está presente en el dataset.")
+        print(f"El rango de años disponibles es de {min_year} a {max_year}.")
+        return None, None
+    
+    # Crear un DataFrame con las características ingresadas
+    data = pd.DataFrame({
+        "early_access": [early_access],
+        "metascore": [metascore],
+        "year": [year],
+        "genres_encoded": [genre_encoded],
+    })
+    
+    # Realizar la predicción del precio utilizando el modelo entrenado
+    price_pred = model.predict(data)[0]
+    
+    
+   
+    return {'Precio': price_pred, "RMSE del modelo": 8.827512792544086}
 
-    #Usar el modelo cargado previamente para las predicciones
-    try:
-        price = loaded_model.predict(input_df)[0]
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail="Invalid input: " + str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error")
 
-    #Retorna el precio predecido y el RMSE del modelo
-    return {"price": price, "RMSE del modelo": 8.827512792544086}
+ 
+# print(predict('Sports', False, 72, 2013))
 
 
 
 
 
+
+
+
+
+
+
+
+
+# #Prediccion de precios, basado en el modelo entrenado y guardado
+
+# valid_genres = ['Action', 'Strategy', 'Indie', 'Casual', 'Adventure', 'Racing', 'RPG', 'Simulation', 'Massively', 'Sports', 'Free']
+
+
+# class Genero(Enum):
+#     Action = "Action"
+#     Strategy = "Strategy"
+#     Indie = "Indie"
+#     Casual = "Casual"
+#     Adventure = "Adventure"
+#     Racing = "Racing"
+#     RPG = "RPG"
+#     Simulation = "Simulation"
+#     Massively = "Massively Multiplayer"
+#     Sports = "Sports"
+#     Free = "Free to Play"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# @app.get("/predict")
+# def predict(metascore: float = None, early_access: bool = None, year: int = None, genero: Genre = None):
+#     if metascore is None or early_access is None or year is None or genero is None:
+#         raise HTTPException(status_code=400, detail="Missing parameters")
+
+#     # Create input data dictionary
+#     input_data = {
+#         "metascore": metascore,
+#         "early_access": early_access,
+#         "year": year,
+#     }
+
+#     # Set the selected genre's corresponding encoded column to 1
+#     genre_column = f"genres_encoded_{genero.name}"
+#     input_data[genre_column] = 1
+
+#     # Create input DataFrame
+#     input_df = pd.DataFrame([input_data])
+
+#     try:
+#         # Replace 'model.predict' with your actual model prediction code
+#         price = model.predict(input_df)
+#     except Exception as e:
+#         raise HTTPException(status_code=400, detail="Invalid input: " + str(e))
+
+#     return {"price": price[0], "RMSE del modelo": 8.85106790266371}
 
 

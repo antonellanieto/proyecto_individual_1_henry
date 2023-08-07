@@ -2,11 +2,11 @@ import json
 import ast 
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split,RepeatedKFold, cross_val_score
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score, make_scorer
 from sklearn.ensemble import GradientBoostingRegressor
-
+import joblib
 
 
 #lectura del json y creación data frame
@@ -16,6 +16,7 @@ with open('steam_games.json') as f:
         rows.append(ast.literal_eval(line))
 
 df = pd.DataFrame(rows)
+
 
 
 #Limpieza de data
@@ -52,8 +53,7 @@ label_encoder = LabelEncoder()
 df_reduced['genres_encoded'] = label_encoder.fit_transform(df_reduced['genres'])
 df_reduced = df_reduced.groupby(level=0).first()
 
-
-
+joblib.dump(label_encoder, 'label_encoder.pkl')
 
 #Comienzo de el modelo
 
@@ -79,5 +79,4 @@ rmse = mse ** 0.5
 r2 = r2_score(y_test, y_pred)
 
 # print("Root Mean Squared Error (RMSE):", rmse)
-# print("R-squared (R2) Score:", r2)
-
+# # print("R-squared (R2) Score:", r2)
