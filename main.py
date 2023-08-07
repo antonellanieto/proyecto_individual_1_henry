@@ -1,32 +1,25 @@
-import pandas as pd
+
 import numpy as np
 from fastapi import FastAPI
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import pandas as pd
-import joblib
 import pandas as pd
 from pydantic import BaseModel
 from enum import Enum
-import numpy as np
 import pickle
-from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse
 from train import model 
 from fastapi.staticfiles import StaticFiles
 
 
-#Comienzo de la api
-#para levantar fast api: uvicorn main:app --reload
+
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 df = pd.read_csv('df_reduced.csv')
 
-# @app.get("/")
-# async def root():
-#     return 'Hello, World'
 
 
+#Función para conectar el index, página principal
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
     with open("templates/index.html", "r", encoding="utf-8") as file:
@@ -38,8 +31,12 @@ async def read_root():
 @app.get('/genero/')
 def genero(Year: int):
     año_str = str(Year)
-
-#     # Filtrar el DataFrame para el año especificado
+     
+    #Verificar si el año está disponible en DataFrame
+    if año_str not in df['year'].astype(str).unique():
+        return "No se encuentra ese año disponible"
+    
+    # Filtro el DataFrame para el año especificado
     df_year = df[df['year'].astype(str).str.startswith(año_str)]
     
     # Obtener los géneros más vendidos en el año especificado
@@ -52,6 +49,10 @@ def genero(Year: int):
 def juegos(Year: int):
     año_str = str(Year)
 
+    #Verificar si el año está disponible en DataFrame
+    if año_str not in df['year'].astype(str).unique():
+        return "No se encuentra ese año disponible"
+    
     # Filtrar el DataFrame para el año especificado
     df_year = df[df['year'].astype(str).str.startswith(año_str)]
     
@@ -64,8 +65,15 @@ def juegos(Year: int):
 # Función para obtener los 5 specs más repetidos en un año
 @app.get('/specs/')
 def specs(Year: int):
-
+   
     año_str = str(Year)
+
+    #Verificar si el año está disponible en DataFrame
+    if año_str not in df['year'].astype(str).unique():
+        return "No se encuentra ese año disponible"
+    
+
+
     # Filtrar el DataFrame para el año especificado
     df_year = df[df['year'].astype(str).str.startswith(año_str)]
     
@@ -79,6 +87,12 @@ def specs(Year: int):
 @app.get('/earlyaccess/')
 def earlyacces(Year: str):
     año_str = str(Year)
+    
+    #Verificar si el año está disponible en DataFrame
+    if año_str not in df['year'].astype(str).unique():
+        return "No se encuentra ese año disponible"
+    
+
     # Filtrar el DataFrame para el año especificado
     mask = (df['year'].astype(str).str.startswith(año_str)) & (df["early_access"] == True)
     df_year = df[mask]
@@ -92,6 +106,10 @@ def earlyacces(Year: str):
 def sentiment(Year: int):
     año_str = str(Year)
 
+    #Verificar si el año está disponible en DataFrame
+    if año_str not in df['year'].astype(str).unique():
+        return "No se encuentra ese año disponible"
+    
     # Filtrar el DataFrame para el año especificado
     df_year = df[df['year'].astype(str).str.startswith(año_str)]
     
@@ -102,9 +120,13 @@ def sentiment(Year: int):
 
 @app.get('/metascore/')
 def metascore(Year: int):
-
+ 
     año_str = str(Year)
 
+    #Verificar si el año está disponible en DataFrame
+    if año_str not in df['year'].astype(str).unique():
+        return "No se encuentra ese año disponible"
+    
     # Filtrar el DataFrame para el año especificado
     df_year = df[df['year'].astype(str).str.startswith(año_str)]
     
@@ -114,23 +136,21 @@ def metascore(Year: int):
 
 
 
-# Load the trained model
+#Carga de modelo
 with open('gradient_boosting.pkl', 'wb') as f:
     pickle.dump(model, f)
 
 with open('gradient_boosting.pkl', 'rb') as f:
     loaded_model = pickle.load(f)
 
-#Prediccion de precios, basado en el modelo entrenado y guardado
 
+
+#Prediccion de precios, basado en el modelo entrenado y guardado
 
 class GameFeatures(BaseModel):
     metascore: float
     early_acces: bool
     year: int
-
-
-
 
 
 
@@ -153,17 +173,17 @@ class Genre(Enum):
 
 @app.get("/predict")
 def predict(metascore: float = None, year: int = None, genre: Genre = None):
-     # Validate that all required parameters are provided
+    #Validar que los parámetros están ok
     if metascore is None or year is None or genre is None:
         raise HTTPException(status_code=400, detail="Missing parameters")
-
-    # Convert the input to a DataFrame with the columns required for the model
+    
+    #Convertir el input a un DataFrame con las columnas requeridas para el modelo
     input_df = pd.DataFrame(
         [[metascore, year, genre == Genre.Early_Access, genre.value == Genre.Free_to_Play]],
         columns=['early_access', 'metascore', 'year', 'genres_encoded']
     )
 
-    # Use the loaded_model directly for prediction
+    #Usar el modelo cargado previamente para las predicciones
     try:
         price = loaded_model.predict(input_df)[0]
     except ValueError as e:
@@ -171,29 +191,12 @@ def predict(metascore: float = None, year: int = None, genre: Genre = None):
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
 
-    # Return the price and RMSE as output
+    #Retorna el precio predecido y el RMSE del modelo
     return {"price": price, "RMSE del modelo": 8.827512792544086}
 
 
 
 
-
-
-
-# # Custom root endpoint to display all available endpoints
-# @app.get('/')
-# def get_endpoints():
-#     # Generate the OpenAPI schema
-#     openapi_schema = app.openapi()
-
-#     # Extract the paths (endpoints) from the schema
-#     paths = openapi_schema['paths']
-
-#     # Get a list of all available endpoints
-#     endpoints = [path for path in paths]
-
-#     # Return the list of endpoints
-#     return {'endpoints': endpoints}
 
 
 

@@ -2,11 +2,9 @@ import json
 import ast 
 import pandas as pd
 import numpy as np
-# from datetime import datetime
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import mean_squared_error, r2_score
-# from sklearn.metrics import mean_squared_error
 from sklearn.ensemble import GradientBoostingRegressor
 
 
@@ -44,14 +42,12 @@ columns_to_drop = ['publisher', 'url', 'tags', 'discount_price',
 #elimino columnas pra el modelo
 df_reduced = df.drop(columns_to_drop, axis=1)
 
-
-
-
+#explode de la lista genres
 df_reduced['genres'] = df_reduced['genres'].str.split(',')
 df_reduced = df_reduced.explode('genres')
 df_reduced['genres'] = df_reduced['genres'].str.extract(r"(\w+)")
 
-
+#creacion de columna encoded de generos
 label_encoder = LabelEncoder()
 df_reduced['genres_encoded'] = label_encoder.fit_transform(df_reduced['genres'])
 df_reduced = df_reduced.groupby(level=0).first()
@@ -59,29 +55,27 @@ df_reduced = df_reduced.groupby(level=0).first()
 
 
 
-
 #Comienzo de el modelo
 
-
-# # Separate the target variable (price) from the features (X)
+# Defino X features y Y features
 X = df_reduced.drop(['price', 'sentiment', 'genres', 'app_name', 'specs'], axis=1)
 y = df_reduced['price']
 
-# Assuming X and y are defined as before
+# Train y test
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# Create and fit the gradient boosting regressor model
+# Fit model
 model = GradientBoostingRegressor()
 model.fit(X_train, y_train)
 
-# Make predictions on the test set
+# Crear prediccón 
 y_pred = model.predict(X_test)
 
-# Evaluate the model using mean squared error
+# Evaluación del modelo
 mse = mean_squared_error(y_test, y_pred)
 rmse = mse ** 0.5
 
-# Calculate the R2 score
+# Calculo del r2
 r2 = r2_score(y_test, y_pred)
 
 # print("Root Mean Squared Error (RMSE):", rmse)
