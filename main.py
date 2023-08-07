@@ -1,21 +1,25 @@
 import pandas as pd
 import numpy as np
 from fastapi import FastAPI
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
 import pandas as pd
 import joblib
-from fastapi import FastAPI, HTTPException
 import pandas as pd
 from pydantic import BaseModel
 from enum import Enum
 import numpy as np
 import pickle
+from fastapi import FastAPI, Query
+from fastapi.responses import HTMLResponse
+from train import model 
+from fastapi.staticfiles import StaticFiles
+
 
 #Comienzo de la api
 #para levantar fast api: uvicorn main:app --reload
 app = FastAPI()
-
+app.mount("/static", StaticFiles(directory="static"), name="static")
 df = pd.read_csv('df_reduced.csv')
 
 # @app.get("/")
@@ -23,10 +27,17 @@ df = pd.read_csv('df_reduced.csv')
 #     return 'Hello, World'
 
 
+@app.get("/", response_class=HTMLResponse)
+async def read_root():
+    with open("templates/index.html", "r", encoding="utf-8") as file:
+        content = file.read()
+    return HTMLResponse(content=content)
+
+
 # Función para obtener los 5 géneros más vendidos en un año
 @app.get('/genero/')
-def genero(Año: int):
-    año_str = str(Año)
+def genero(Year: int):
+    año_str = str(Year)
 
 #     # Filtrar el DataFrame para el año especificado
     df_year = df[df['year'].astype(str).str.startswith(año_str)]
@@ -38,8 +49,8 @@ def genero(Año: int):
 
 # Función para obtener los juegos lanzados en un año
 @app.get('/juegos/')
-def juegos(Año: int):
-    año_str = str(Año)
+def juegos(Year: int):
+    año_str = str(Year)
 
     # Filtrar el DataFrame para el año especificado
     df_year = df[df['year'].astype(str).str.startswith(año_str)]
@@ -52,9 +63,9 @@ def juegos(Año: int):
 
 # Función para obtener los 5 specs más repetidos en un año
 @app.get('/specs/')
-def specs(Año: int):
+def specs(Year: int):
 
-    año_str = str(Año)
+    año_str = str(Year)
     # Filtrar el DataFrame para el año especificado
     df_year = df[df['year'].astype(str).str.startswith(año_str)]
     
@@ -65,9 +76,9 @@ def specs(Año: int):
 
 
 # Función para obtener la cantidad de juegos lanzados en un año con early access
-@app.get('/earlyacces/')
-def earlyacces(Año: str):
-    año_str = str(Año)
+@app.get('/earlyaccess/')
+def earlyacces(Year: str):
+    año_str = str(Year)
     # Filtrar el DataFrame para el año especificado
     mask = (df['year'].astype(str).str.startswith(año_str)) & (df["early_access"] == True)
     df_year = df[mask]
@@ -78,8 +89,8 @@ def earlyacces(Año: str):
 
 
 @app.get('/sentiment/')
-def sentiment(Año: int):
-    año_str = str(Año)
+def sentiment(Year: int):
+    año_str = str(Year)
 
     # Filtrar el DataFrame para el año especificado
     df_year = df[df['year'].astype(str).str.startswith(año_str)]
@@ -90,9 +101,9 @@ def sentiment(Año: int):
     return analisis_sentimiento
 
 @app.get('/metascore/')
-def metascore(Año: int):
+def metascore(Year: int):
 
-    año_str = str(Año)
+    año_str = str(Year)
 
     # Filtrar el DataFrame para el año especificado
     df_year = df[df['year'].astype(str).str.startswith(año_str)]
@@ -103,8 +114,10 @@ def metascore(Año: int):
 
 
 
-
 # Load the trained model
+with open('gradient_boosting.pkl', 'wb') as f:
+    pickle.dump(model, f)
+
 with open('gradient_boosting.pkl', 'rb') as f:
     loaded_model = pickle.load(f)
 
@@ -150,11 +163,11 @@ def predict(metascore: float = None, year: int = None, genre: Genre = None):
         columns=['early_access', 'metascore', 'year', 'genres_encoded']
     )
 
-    # Perform the prediction with the model
+    # Use the loaded_model directly for prediction
     try:
-      price = loaded_model.predict(input_df)[0]
+        price = loaded_model.predict(input_df)[0]
     except ValueError as e:
-         raise HTTPException(status_code=400, detail="Invalid input: " + str(e))
+        raise HTTPException(status_code=400, detail="Invalid input: " + str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
 
@@ -166,20 +179,21 @@ def predict(metascore: float = None, year: int = None, genre: Genre = None):
 
 
 
-# Custom root endpoint to display all available endpoints
-@app.get('/')
-def get_endpoints():
-    # Generate the OpenAPI schema
-    openapi_schema = app.openapi()
 
-    # Extract the paths (endpoints) from the schema
-    paths = openapi_schema['paths']
+# # Custom root endpoint to display all available endpoints
+# @app.get('/')
+# def get_endpoints():
+#     # Generate the OpenAPI schema
+#     openapi_schema = app.openapi()
 
-    # Get a list of all available endpoints
-    endpoints = [path for path in paths]
+#     # Extract the paths (endpoints) from the schema
+#     paths = openapi_schema['paths']
 
-    # Return the list of endpoints
-    return {'endpoints': endpoints}
+#     # Get a list of all available endpoints
+#     endpoints = [path for path in paths]
+
+#     # Return the list of endpoints
+#     return {'endpoints': endpoints}
 
 
 

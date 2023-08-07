@@ -3,11 +3,11 @@ import ast
 import pandas as pd
 import numpy as np
 # from datetime import datetime
-# from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-# from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.metrics import mean_squared_error, r2_score
 # from sklearn.metrics import mean_squared_error
-# from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import GradientBoostingRegressor
 
 
 
@@ -64,25 +64,25 @@ df_reduced = df_reduced.groupby(level=0).first()
 
 
 # # Separate the target variable (price) from the features (X)
-# X = df_reduced.drop(['price', 'sentiment', 'genres', 'app_name', 'specs'], axis=1)
-# y = df_reduced['price']
+X = df_reduced.drop(['price', 'sentiment', 'genres', 'app_name', 'specs'], axis=1)
+y = df_reduced['price']
 
-# # Assuming X and y are defined as before
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# Assuming X and y are defined as before
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# # Create and fit the gradient boosting regressor model
-# model = GradientBoostingRegressor()
-# model.fit(X_train, y_train)
+# Create and fit the gradient boosting regressor model
+model = GradientBoostingRegressor()
+model.fit(X_train, y_train)
 
-# # Make predictions on the test set
-# y_pred = model.predict(X_test)
+# Make predictions on the test set
+y_pred = model.predict(X_test)
 
-# # Evaluate the model using mean squared error
-# mse = mean_squared_error(y_test, y_pred)
-# rmse = mse ** 0.5
+# Evaluate the model using mean squared error
+mse = mean_squared_error(y_test, y_pred)
+rmse = mse ** 0.5
 
-# # Calculate the R2 score
-# r2 = r2_score(y_test, y_pred)
+# Calculate the R2 score
+r2 = r2_score(y_test, y_pred)
 
 # print("Root Mean Squared Error (RMSE):", rmse)
 # print("R-squared (R2) Score:", r2)
