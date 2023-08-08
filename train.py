@@ -55,6 +55,9 @@ df_reduced = df_reduced.groupby(level=0).first()
 
 joblib.dump(label_encoder, 'label_encoder.pkl')
 
+
+
+
 #Comienzo de el modelo
 
 # Defino X features y Y features
@@ -78,5 +81,3 @@ rmse = mse ** 0.5
 # Calculo del r2
 r2 = r2_score(y_test, y_pred)
 
-# print("Root Mean Squared Error (RMSE):", rmse)
-# # print("R-squared (R2) Score:", r2)
